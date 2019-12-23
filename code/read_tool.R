@@ -63,7 +63,22 @@ read_chikakouji_file <- function(file){
     tmp_data$`駅名` <- ""
   }
   
-  
+  # 道路に関する項目がない場合
+  if( ! "前面道路の幅員" %in% names(tmp_data)){
+    tmp_data$`前面道路区分` <- ""
+    tmp_data$`前面道路の方位区分` <- ""
+    tmp_data$`前面道路の幅員` <- ""
+    tmp_data$`前面道路の駅前区分` <- ""
+    tmp_data$`前面道路の舗装状況` <- ""
+    tmp_data$`側道区分` <- ""
+    tmp_data$`側道方位区分` <- ""
+    tmp_data$`交通施設との近接区分` <- ""
+  }
+
+  # 2.2
+  if( data_year %in% c(2014)){
+    tmp_data$`前面道路区分` <- road_cond_decode(tmp_data$`前面道路区分`)
+  }
   
   ##########################################
   # 用途地域列の処理をして整理して
@@ -77,6 +92,13 @@ read_chikakouji_file <- function(file){
   tmp_data <- tmp_data %>% 
     mutate(
       
+      # 都道府県、所在
+      `都道府県` = `住居表示` %>% str_split("　",simplify = T) %>% .[,1],
+      `所在` = `住居表示` %>% str_split("　",simplify = T) %>% .[,2],
+
+      # 道路の幅員
+      `前面道路の幅員` = as.numeric(tmp_data$`前面道路の幅員`) / 10,
+
       # 当該年度価格
       price = tmp_data[[search_price_col_index(tmp_data)]] %>% as.integer(),
       
@@ -118,6 +140,7 @@ read_chikakouji_file <- function(file){
            wareki,
            std_number,
            price,
+           `都道府県`,`所在`,
            `所在地コード`:`地積`,
            genkyo,
            `利用状況表示`,
@@ -131,6 +154,7 @@ read_chikakouji_file <- function(file){
            容積率,
            `駅名`,
            `駅距離`,
+           `前面道路区分`:`交通施設との近接区分`,
            long, lat,
            sentei_bit,
            point_status,
@@ -182,6 +206,22 @@ make_stdnumber_string <- function(youto,renban,name){
          sprintf("%s%s-%s",name,youto,renban))
 }
 
+
+road_cond_decode <- function(road_cond_veoctor){
+  tmp <- as.integer(road_cond_veoctor) + 1
+  n <- 1:6
+  names(n) <-   c("その他",
+                  "側道",
+                  "三方路",
+                  "四方路",
+                  "一方路・準角地",
+                  "背面道")
+  
+  ans <- names(n[tmp])
+  ans <- ifelse(is.na(ans),"_",ans)
+  
+  return(ans)
+}
 
 ###############################################################
 # bit構文解析ルーチン
