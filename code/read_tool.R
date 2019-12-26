@@ -101,7 +101,16 @@ read_chikakouji_file <- function(file){
 
       # 当該年度価格
       price = tmp_data[[search_price_col_index(tmp_data)]] %>% as.integer(),
+
+      # 前年度価格
+      price_lastyear = lastyear_price(tmp_data),
       
+      mod_rate = round(price / price_lastyear * 100 - 100 ,1),
+                         
+      
+      
+      
+            
       # 標準地番号
       std_number = make_stdnumber_string(`用途`,`連番`,`市区町村名`),
       
@@ -140,6 +149,8 @@ read_chikakouji_file <- function(file){
            wareki,
            std_number,
            price,
+           price_lastyear,
+           mod_rate,
            `都道府県`,`所在`,
            `所在地コード`:`地積`,
            genkyo,
@@ -178,6 +189,18 @@ search_price_col_index <- function(df){
   offset <- current_year - 1982
   
   return(base + offset)
+}
+
+lastyear_price <- function(df){
+  current_year <- as.integer(df$`年次`[1])
+  if(current_year == 1983){return(NA)}
+  
+  ans <- df[[search_price_col_index(df) - 1]] %>% 
+    as.integer()
+  
+  ans <- ifelse(ans == 0, NA, ans)
+  
+  return(ans)
 }
 
 search_change_property_col_index <- function(df){
